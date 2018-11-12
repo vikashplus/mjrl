@@ -5,16 +5,22 @@ logging.disable(logging.CRITICAL)
 import numpy as np
 from mjrl.utils.get_environment import get_environment
 from mjrl.utils import tensor_utils
+from tqdm import tqdm
 
 
 # Single core rollout to sample trajectories
 # =======================================================
 def do_evaluation_rollout(N,
-                          policy,
-                          T=1e6,
-                          env=None,
-                          env_name=None,
-                          pegasus_seed=None):
+               policy,
+               T=1e6,
+               env=None,
+               env_name=None,
+               pegasus_seed=None,
+               get_image=False,
+               get_image_args=None,
+               image_based=False,
+               ):
+
     """
     params:
     N               : number of trajectories
@@ -36,7 +42,7 @@ def do_evaluation_rollout(N,
 
     paths = []
 
-    for ep in range(N):
+    for ep in tqdm(range(N)):
 
         # Set pegasus seed if asked
         if pegasus_seed is not None:
@@ -51,16 +57,24 @@ def do_evaluation_rollout(N,
         rewards = []
         agent_infos = []
         env_infos = []
+        images = []
 
-        o = env.reset()
+        env.reset()
         done = False
         t = 0
 
         while t < T and done != True:
-            _, agent_info = policy.get_action(o)
-            a = agent_info['evaluation']
+            o = env.env.env._get_obs()
+            if get_image:
+                image = env.env.env.get_image(**get_image_args)
+                images.append(image)
+            if image_based:
+                _, agent_info = policy.get_action(image)
+                a = agent_info['evaluation']
+            else:
+                _, agent_info = policy.get_action(o)
+                a = agent_info['evaluation']
             next_o, r, done, env_info = env.step(a)
-            # observations.append(o.ravel())
             observations.append(o)
             actions.append(a)
             rewards.append(r)
@@ -75,13 +89,14 @@ def do_evaluation_rollout(N,
             rewards=np.array(rewards),
             agent_infos=tensor_utils.stack_tensor_dict_list(agent_infos),
             env_infos=tensor_utils.stack_tensor_dict_list(env_infos),
-            terminated=done
+            terminated=done,
+            images=np.array(images),
         )
 
         paths.append(path)
 
     # print("====== Worker finished ======")
-
+    del (env)
     return paths
 
 
