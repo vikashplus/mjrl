@@ -142,13 +142,20 @@ class MujocoEnv(gym.Env):
                 t = t+1
         self.mujoco_render_frames = False
 
+    def get_image(self, frame_size=(640, 480), camera_name=None, device_id=0):
+        image = self.sim.render(width=frame_size[0], height=frame_size[1],
+                                mode='offscreen', camera_name=camera_name, device_id=device_id)
+        image = image[::-1, :, :]
+        return image
+
     def visualize_policy_offscreen(self, policy, horizon=1000,
                                    num_episodes=1,
                                    frame_size=(640,480),
                                    mode='exploration',
                                    save_loc='/tmp/',
                                    filename='newvid',
-                                   camera_name=None):
+                                   camera_name=None,
+                                   device_id=0):
         import skvideo.io
         for ep in range(num_episodes):
             print("Episode %d: rendering offline " % ep, end='', flush=True)
@@ -161,9 +168,8 @@ class MujocoEnv(gym.Env):
                 a = policy.get_action(o)[0] if mode == 'exploration' else policy.get_action(o)[1]['evaluation']
                 o, r, d, _ = self.step(a)
                 t = t+1
-                curr_frame = self.sim.render(width=frame_size[0], height=frame_size[1],
-                                             mode='offscreen', camera_name=camera_name, device_id=0)
-                arrs.append(curr_frame[::-1,:,:])
+                image = self.get_image(frame_size, camera_name, device_id)
+                arrs.append(image)
                 print(t, end=', ', flush=True)
             file_name = save_loc + filename + str(ep) + ".mp4"
             skvideo.io.vwrite( file_name, np.asarray(arrs))
