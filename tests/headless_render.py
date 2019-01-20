@@ -40,6 +40,6 @@ e.env.env.visualize_policy_offscreen(policy, e.horizon,
                                      mode='exploration',
                                      save_loc=EXP_DIR+'/',
                                      filename=e.env_id+'_test_',
-                                     camera_name=None, # use default camera
+                                     camera_name="cam0", # use default camera
                                      device_id=0,
                                      )

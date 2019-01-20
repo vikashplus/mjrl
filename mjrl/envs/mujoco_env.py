@@ -54,6 +54,9 @@ class MujocoEnv(gym.Env):
 
         self._seed()
 
+    def seed(self, seed=None):  # Compatibility with new gym
+        return self._seed(seed)
+
     def _seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
